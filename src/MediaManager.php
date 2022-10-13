@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use League\Flysystem\Adapter\Local;
 
 /**
- * Class MediaManager.
+ * Class MediaManager. upto laravel 9
  */
 class MediaManager extends Extension
 {
