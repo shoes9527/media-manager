@@ -27,13 +27,6 @@ class MediaManager extends Extension
     protected $storage;
 
     /**
-     * List of allowed extensions.
-     *
-     * @var string
-     */
-    protected $allowed = [];
-
-    /**
      * @var array
      */
     protected $fileTypes = [
@@ -57,20 +50,15 @@ class MediaManager extends Extension
     {
         $this->path = $path;
 
-        if (!empty(config('admin.extensions.media-manager.allowed_ext'))) {
-            $this->allowed = explode(',', config('admin.extensions.media-manager.allowed_ext'));
-        }
-
         $this->initStorage();
     }
 
     private function initStorage()
     {
         $disk = static::config('disk');
-
         $this->storage = Storage::disk($disk);
 
-        if (!$this->storage->getDriver()->getAdapter() instanceof Local) {
+        if (!$this->storage instanceof Local) {
             Handler::error('Error', '[laravel-admin-ext/media-manager] only works for local storage.');
         }
     }
@@ -88,10 +76,10 @@ class MediaManager extends Extension
         $directories = $this->storage->directories($this->path);
 
         return $this->formatDirectories($directories)
-                ->merge($this->formatFiles($files))
-                ->sort(function ($item) {
-                    return $item['name'];
-                })->all();
+            ->merge($this->formatFiles($files))
+            ->sort(function ($item) {
+                return $item['name'];
+            })->all();
     }
 
     /**
@@ -103,12 +91,7 @@ class MediaManager extends Extension
      */
     protected function getFullPath($path)
     {
-        $fullPath = $this->storage->getDriver()->getAdapter()->applyPathPrefix($path);
-        if (strstr($fullPath, '..')) {
-            throw new \Exception('Incorrect path');
-        }
-
-        return $fullPath;
+        return $this->storage->path($path);
     }
 
     public function download()
@@ -141,11 +124,6 @@ class MediaManager extends Extension
 
     public function move($new)
     {
-        $ext = pathinfo($new, PATHINFO_EXTENSION);
-        if ($this->allowed && !in_array($ext, $this->allowed)) {
-            throw new \Exception('File extension '.$ext.' is not allowed');
-        }
-
         return $this->storage->move($this->path, $new);
     }
 
@@ -158,10 +136,6 @@ class MediaManager extends Extension
     public function upload($files = [])
     {
         foreach ($files as $file) {
-            if ($this->allowed && !in_array($file->getClientOriginalExtension(), $this->allowed)) {
-                throw new \Exception('File extension '.$file->getClientOriginalExtension().' is not allowed');
-            }
-
             $this->storage->putFileAs($this->path, $file, $file->getClientOriginalName());
         }
 
@@ -265,9 +239,9 @@ class MediaManager extends Extension
     {
         switch ($this->detectFileType($file)) {
             case 'image':
-
-                if ($this->storage->getDriver()->getConfig()->has('url')) {
-                    $url = $this->storage->url($file);
+                // if ($this->storage->has('url')) {
+                $url = $this->storage->url($file);
+                if ($url) {
                     $preview = "<span class=\"file-icon has-img\"><img src=\"$url\" alt=\"Attachment\"></span>";
                 } else {
                     $preview = '<span class="file-icon"><i class="fa fa-file-image-o"></i></span>';
