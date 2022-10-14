@@ -79,6 +79,8 @@ class MediaManager extends Extension
             ->merge($this->formatFiles($files))
             ->sort(function ($item) {
                 return $item['name'];
+            })->sortByDesc(function ($item) {
+                return $item['time'];
             })->all();
     }
 
